@@ -10,20 +10,26 @@ import { Drink } from './drink/entity/drink.model.js';
 import { User } from './user/entity/user.model.js';
 import { Order, OrderItem } from './order/entities/order.entity.js';
 
+import { ConfigModule,ConfigService } from '@nestjs/config';
+
 
 
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
+    ConfigModule.forRoot({isGlobal : true}),
+    TypeOrmModule.forRootAsync({
+      inject : [ConfigService],
+      useFactory : (config : ConfigService) => ({
       type : 'postgres',
-      host : 'localhost',
-      port : 5432,
-      username : 'postgres',
-      password : 'admin1234',
-      database : 'order-drink',
+      host : config.getOrThrow<string>('DB_HOST'),
+      port : config.getOrThrow<number>('DB_PORT'),
+      username : config.getOrThrow<string>('DB_USERNAME'),
+      password : config.getOrThrow<string>('DB_PASSWORD'),
+      database : config.getOrThrow<string>('DB_NAME'),
       entities : [Drink,User,Order,OrderItem],
       synchronize : true
+      })
     }),
     DrinkModule, 
     UserModule,
