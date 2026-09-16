@@ -65,6 +65,6 @@ export class OrderService {
       throw new NotFoundException(`Aucune commande avec l'id : ${id}`)
     }
 
-    await this.orderRepository.remove(order)
+    this.orderRepository.remove(order)
   }
 }
