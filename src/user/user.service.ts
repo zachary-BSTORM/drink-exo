@@ -1,43 +1,52 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { User } from './entity/user.model.js';
 import { CreateUser } from './dto/create-user.dto.js';
+import { UserDto } from './dto/user.dto.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class UserService {
 
-private users : User[] = []
-lastId = 0;
+constructor(
+    @InjectRepository(User)
+    private readonly userRepository : Repository<User>
+){}
 
-create(newUser : CreateUser): User{
-    if(this.findByEmail(newUser.email)){
-        throw new ConflictException(`Email ${newUser.email} déja utilisé`)
-    }
+async create(newUser : CreateUser): Promise<User> {
 
-    const user : User = {
-        id : this.lastId + 1,
+if(await this.findByEmail(newUser.email)){
+    throw new ConflictException(`Email ${newUser.email} déja utilisé`)
+}
+
+const user = this.userRepository.create({
         email : newUser.email,
         password : newUser.password,
-        role : newUser.role ?? "user",
-        createdAt : new Date()
-    }
+        role : newUser.role 
+    })
 
-    this.users.push(user)
-    return user
+    return this.userRepository.save(user)
 
 }
 
-findByEmail(email : string) : User | undefined{
-    return this.users.find(u => u.email == email)
+findByEmail(email : string) : Promise<User | null>{
+   return  this.userRepository.findOne({where : {email}})
 }
 
-findOne(id : number): User{
-    const user = this.users.find(u => u.id == id)
+async findOne(id : number): Promise<UserDto>{
+    const user = await this.userRepository.findOne({where : {id}})
 
     if(!user){
-        throw new NotFoundException(`Utilisateur introuvable avec l'id ${id}`)
+        throw new NotFoundException(`Aucun utilisateur avec l'id : ${id}`)
     }
 
-    return user
-}
+    const userDto : UserDto = {
+        id : user.id,
+        email : user.email,
+        role : user.role,
+        createdAt : user.createdAt
+    }
 
+    return userDto
+}
 }

@@ -4,52 +4,52 @@ import { UpdateDrink } from './dtos/update-drink.model.js';
 import { UpdateStockDrink } from './dtos/update-stock-drink.model.js';
 import { DrinkService } from './drink.service.js';
 import { Drink } from './entity/drink.model.js';
-import { AuthGuard } from '../auth/auth.guard.js';
+import { AuthGuard } from '../shared/guards/auth.guard.js';
+import { AdminGuard } from '../shared/guards/admin.guard.js';
 
 @Controller('drink')
-@UseGuards(AuthGuard)
 export class DrinkController {
 
     constructor(private drinkService : DrinkService){}
 
     @Get()
-    findAll() : Drink[]{
-        return this.drinkService.findAll()
+    findAll() :Promise<Drink[]>{
+        return  this.drinkService.findAll()
     }
 
     @Get(':id')
-    findOne(@Param('id' , ParseIntPipe) id : number) : Drink{
-        return this.drinkService.findOne(id)
+    findOne(@Param('id' , ParseIntPipe) id : number) : Promise<Drink>{
+        return  this.drinkService.findOne(id)
     }
 
     @Post()
-    @UseGuards(AuthGuard)
-    create(@Body() newDrink : CreateDrink) : Drink{
+    @UseGuards(AdminGuard)
+    create(@Body() newDrink : CreateDrink) : Promise<Drink> {
         return this.drinkService.create(newDrink)
     }
     
     @Put(':id')
-    @UseGuards(AuthGuard)
+    @UseGuards(AdminGuard)
     update(
         @Param('id',ParseIntPipe) id : number,
         @Body() updatedDrink : UpdateDrink
-    ) : Drink{
+    ) :  Promise<Drink>{
         return this.drinkService.update(id,updatedDrink)
     }
     
     @Put('stock/:id')
-    @UseGuards(AuthGuard)
+    @UseGuards(AdminGuard)
     updatStock(
         @Param('id' , ParseIntPipe) id : number,
         @Body() updatedStock : UpdateStockDrink
-    ) : Drink{
+    ) :  Promise<Drink>{
         return this.drinkService.updateStock(id,updatedStock)
     }
     
     @Delete(':id')
-    @UseGuards(AuthGuard)
+    @UseGuards(AdminGuard)
     @HttpCode(204)
-    delete(@Param('id' , ParseIntPipe) id : number) : void{
+    delete(@Param('id' , ParseIntPipe) id : number) :  Promise<void>{
         return this.drinkService.delete(id)
     }
 }

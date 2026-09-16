@@ -3,20 +3,24 @@ import { Drink } from './entity/drink.model.js';
 import { CreateDrink } from './dtos/create-drink.model.js';
 import { UpdateDrink } from './dtos/update-drink.model.js';
 import { UpdateStockDrink } from './dtos/update-stock-drink.model.js';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class DrinkService {
 
-    drinks : Drink[] = []
-    lastId = 0
+    constructor(
+        @InjectRepository(Drink)
+        private readonly drinkRepository : Repository<Drink>
+    ){}
 
 
-    findAll() : Drink[]{
-        return this.drinks;
+    async findAll() : Promise<Drink[]>{
+        return await this.drinkRepository.find()
     }
 
-    findOne(id : number) : Drink {
-        const drink = this.drinks.find(d => d.id == id)
+    async findOne(id : number) : Promise<Drink> {
+        const drink = await this.drinkRepository.findOne({where : {id}})
 
         if(!drink){
             throw new NotFoundException(`Aucune boisson avec l' id : ${id}`) // altgr + µ
@@ -25,48 +29,48 @@ export class DrinkService {
         return drink
     }
 
-    create(newDrink : CreateDrink) : Drink {
-        const drink : Drink = {
-            id : this.lastId + 1,
-            nom : newDrink.nom,
-            price : newDrink.price,
-            stock : newDrink.stock,
-            imageurl : newDrink.imageurl,
-            exp : newDrink.exp,
-            type : newDrink.type,
-            createdAt : new Date()
-        }
+    async create(newDrink : CreateDrink) : Promise<Drink> {
+            const drink = this.drinkRepository.create({
+                nom : newDrink.nom,
+                type : newDrink.type,
+                price : newDrink.price,
+                exp : newDrink.exp,
+                imageurl : newDrink.imageurl,
+                stock : newDrink.stock
+            })
 
-        this.drinks.push(drink)
-
-        return drink
+ 
+        return await this.drinkRepository.save(drink)
     }
 
-    update(id : number , updatedDrink : UpdateDrink) : Drink {
-        const drink = this.findOne(id)
+    async update(id : number , updatedDrink : UpdateDrink) : Promise<Drink> {
+        const drink = await this.findOne(id)
+
         Object.assign(drink,updatedDrink)
-        return drink
+
+        return await this.drinkRepository.save(drink)
 
     }
 
-    updateStock(id : number , updatedStock : UpdateStockDrink) : Drink {
-        const drink = this.findOne(id)
+    async updateStock(id : number , updatedStock : UpdateStockDrink) : Promise<Drink> {
+        const drink = await this.findOne(id)
 
         if(updatedStock.stock < 0){
             throw new RangeError(`Le stock ne peut pas être négatif , valeur incorrecte : ${updatedStock.stock}`)
         }
 
         Object.assign(drink,updatedStock)
-        return drink
+        return await this.drinkRepository.save(drink)
     }
 
-    delete(id : number) : void {
-        const index = this.drinks.findIndex(d => d.id == id)
 
-        if(index == -1){
+    async delete(id : number) : Promise<void> {
+        const drink = await this.findOne(id)
+
+        if(!drink){
             throw new NotFoundException(`Aucune boisson avec l'id : ${id}`)
         }
 
-        this.drinks.splice(index,1)
+        await this.drinkRepository.remove(drink)
     }
 }
